@@ -1,0 +1,10 @@
+#! /bin/bash
+./config.sh \
+    --unattended \
+    --replace \
+    --disableupdate \
+    --ephemeral \
+    --url "${GITHUB_URL}" \
+    --token "${GITHUB_TOKEN}" \
+    --labels "${GITHUB_LABELS}" \
+&& ./run.sh
