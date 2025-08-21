@@ -26,7 +26,7 @@ RUN microdnf install --assumeyes --nodocs \
         ansible-core-2.16.14 \
         jq-1.7.1 \
         buildah-1.39.4 \
-        fuse-overlayfs-1.14.2 \
+        fuse-overlayfs-1.14 \
         gh-2.76.2 \
         nodejs-npm-10.9.2 \
         java-21-openjdk-headless-21.0.8.0.9 \
