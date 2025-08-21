@@ -24,6 +24,7 @@ ADD [ \
         "/etc/yum.repos.d/" \
     ]
 RUN microdnf install --assumeyes --nodocs \
+        libicu-74.2 \
         unzip-6.0 \
         ansible-core-2.16.14 \
         jq-1.7.1 \
@@ -62,9 +63,13 @@ RUN curl --fail --silent --show-error --location \
     && rm -f /tmp/structurizr-cli.zip && rm -rf /tmp/*
 
 ARG GH_ACTION_RUNNER_VERSION="2.328.0"
+ENV RUNNER_ALLOW_RUNASROOT=1
 RUN curl --fail --silent --show-error --location \
         "https://github.com/actions/runner/releases/download/v${GH_ACTION_RUNNER_VERSION}/actions-runner-linux-x64-${GH_ACTION_RUNNER_VERSION}.tar.gz" \
-        --output /tmp/actions-runner.tar.gz
+        --output /tmp/actions-runner.tar.gz \
+    && mkdir -p /opt/actions-runner \
+    && tar -xzf /tmp/actions-runner.tar.gz -C /opt/actions-runner --strip-components=1 \
+    && rm -f /tmp/actions-runner.tar.gz && rm -rf /tmp/*
 
 # USER ${MAIN_USER}
 WORKDIR /
