@@ -32,13 +32,13 @@ RUN microdnf install --assumeyes --nodocs \
         nodejs-npm-10.9.2 \
         java-21-openjdk-headless-21.0.8.0.9 \
         graphviz-9.0.0 \
-    && microdnf clean all && rm -rf /var/cache/yum && rm -rf /var/cache/dnf
+    && microdnf clean all && rm -rf /var/cache/yum && rm -rf /var/cache/dnf && rm -rf /tmp/*
 
 RUN npm install -g \
         @mermaid-js/mermaid-cli@11.9.0 \
         @iconify-json/devicon@1.2.42 \
         @openai/codex@0.23.0 \
-    && npm cache clean --force && rm -rf /tmp/node-compile-cache
+    && npm cache clean --force && rm -rf /tmp/node-compile-cache && rm -rf /tmp/*
 
 ADD --chmod=0500 \
     "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3" \
@@ -51,16 +51,20 @@ ARG TERRAFORM_VERSION="1.13.0"
 ADD "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip" \
     "/tmp/terraform.zip"
 RUN unzip -o /tmp/terraform.zip -d /usr/local/bin/ \
-    && rm -f /tmp/terraform.zip \
-    && chmod 0755 /usr/local/bin/terraform
+    && chmod 0755 /usr/local/bin/terraform \
+    && rm -f /tmp/terraform.zip && rm -rf /tmp/* 
 
 ARG STRUCTURIZR_CLI_VERSION="v2025.05.28"
 RUN curl --fail --silent --show-error --location \
         "https://github.com/structurizr/cli/releases/download/${STRUCTURIZR_CLI_VERSION}/structurizr-cli.zip" \
         --output /tmp/structurizr-cli.zip \
     && unzip -o /tmp/structurizr-cli.zip -d /usr/local/bin/ \
-    && rm -f /tmp/structurizr-cli.zip
+    && rm -f /tmp/structurizr-cli.zip && rm -rf /tmp/*
 
+ARG GH_ACTION_RUNNER_VERSION="2.328.0"
+RUN curl --fail --silent --show-error --location \
+        "https://github.com/actions/runner/releases/download/v${GH_ACTION_RUNNER_VERSION}/actions-runner-linux-x64-${GH_ACTION_RUNNER_VERSION}.tar.gz" \
+        --output /tmp/actions-runner.tar.gz
 
 # USER ${MAIN_USER}
 WORKDIR /
