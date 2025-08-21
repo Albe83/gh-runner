@@ -16,9 +16,6 @@ FROM ${TARGET_IMAGE_REPOSITORY}/${TARGET_IMAGE_NAME}:${TARGET_IMAGE_TAG}@${TARGE
 ARG TARGETOS
 ARG TARGETARCH
 
-ARG MAIN_USER="user"
-RUN useradd --no-create-home --no-user-group --system --shell /bin/false --comment "Main User" ${MAIN_USER}
-
 ADD [ \
         "https://cli.github.com/packages/rpm/gh-cli.repo", \
         "/etc/yum.repos.d/" \
@@ -29,6 +26,7 @@ RUN microdnf install --assumeyes --nodocs \
         ansible-core-2.16.14 \
         jq-1.7.1 \
         buildah-1.39.4 \
+        fuse-overlayfs-1.14.2 \
         gh-2.76.2 \
         nodejs-npm-10.9.2 \
         java-21-openjdk-headless-21.0.8.0.9 \
@@ -62,14 +60,24 @@ RUN curl --fail --silent --show-error --location \
     && unzip -o /tmp/structurizr-cli.zip -d /usr/local/bin/ \
     && rm -f /tmp/structurizr-cli.zip && rm -rf /tmp/*
 
+
+ARG MAIN_USER="gh-runner"
+RUN useradd \
+    #--no-create-home \
+    #--no-user-group \
+    --system \
+    --shell /bin/false \
+    --comment "Main User" \
+    ${MAIN_USER}
+USER ${MAIN_USER}
+WORKDIR /home/${MAIN_USER}
+
 ARG GH_ACTION_RUNNER_VERSION="2.328.0"
-ENV RUNNER_ALLOW_RUNASROOT=1
 RUN curl --fail --silent --show-error --location \
         "https://github.com/actions/runner/releases/download/v${GH_ACTION_RUNNER_VERSION}/actions-runner-linux-x64-${GH_ACTION_RUNNER_VERSION}.tar.gz" \
-        --output /tmp/actions-runner.tar.gz \
-    && mkdir -p /opt/actions-runner \
-    && tar -xzf /tmp/actions-runner.tar.gz -C /opt/actions-runner --strip-components=1 \
-    && rm -f /tmp/actions-runner.tar.gz && rm -rf /tmp/*
-
-# USER ${MAIN_USER}
-WORKDIR /
+        --output ./actions-runner.tar.gz \
+#    && mkdir -p /opt/actions-runner \
+#    && tar -xzf /tmp/actions-runner.tar.gz -C /opt/actions-runner --strip-components=1 \
+#    && rm -f /tmp/actions-runner.tar.gz && rm -rf /tmp/*
+    && tar -xzf ./actions-runner.tar.gz
+ENV RUNNER_ALLOW_RUNASROOT=1
