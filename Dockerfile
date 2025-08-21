@@ -31,6 +31,7 @@ RUN microdnf install --assumeyes --nodocs \
         nodejs-npm-10.9.2 \
         java-21-openjdk-headless-21.0.8.0.9 \
         graphviz-9.0.0 \
+        golang-1.24.6 \
     && microdnf clean all && rm -rf /var/cache/yum && rm -rf /var/cache/dnf && rm -rf /tmp/*
 
 RUN npm install -g \
@@ -60,6 +61,16 @@ RUN curl --fail --silent --show-error --location \
     && unzip -o /tmp/structurizr-cli.zip -d /usr/local/bin/ \
     && rm -f /tmp/structurizr-cli.zip && rm -rf /tmp/*
 
+ARG COSIGN_VERSION="2.5.3"
+ARG COSIGN_URL="https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${TARGETARCH}"
+RUN curl --fail --silent --show-error --location \
+        ${COSIGN_URL} \
+        --output /tmp/cosign \
+    && curl --fail --silent --show-error --location \
+        ${COSIGN_URL}.sig \
+        --output /tmp/cosign.sig \
+    && install --mode=0755 --owner=root --group=root --preserve-timestamps --preserve-context /tmp/cosign /usr/local/bin/cosign \
+    && rm -f /tmp/cosign && rm -rf /tmp/*
 
 ARG MAIN_USER="gh-runner"
 RUN useradd \
