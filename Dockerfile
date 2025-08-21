@@ -68,6 +68,11 @@ RUN curl --fail --silent --show-error --location \
     && install --mode=0755 --owner=root --group=root --preserve-timestamps --preserve-context /tmp/cosign /usr/local/bin/cosign \
     && rm -f /tmp/cosign && rm -rf /tmp/*
 
+ARG SYFT_VERSION="v1.31.0"
+RUN curl --fail --silent --show-error --location \
+        "https://get.anchore.io/syft" | sh -s -- -b /usr/local/bin -v ${SYFT_VERSION}
+
+
 ARG MAIN_USER="gh-runner"
 RUN useradd \
     #--no-create-home \
