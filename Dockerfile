@@ -30,6 +30,8 @@ RUN microdnf install --assumeyes --nodocs \
         buildah-1.39.4 \
         gh-2.76.2 \
         nodejs-npm-10.9.2 \
+        java-21-openjdk-headless-21.0.8.0.9 \
+        graphviz-9.0.0 \
     && microdnf clean all && rm -rf /var/cache/yum && rm -rf /var/cache/dnf
 
 RUN npm install -g \
@@ -50,6 +52,14 @@ ADD "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${T
 RUN unzip -o /tmp/terraform.zip -d /usr/local/bin/ \
     && rm -f /tmp/terraform.zip \
     && chmod 0755 /usr/local/bin/terraform
+
+ARG STRUCTURIZR_CLI_VERSION="v2025.05.28"
+RUN curl --fail --silent --show-error --location \
+        "https://github.com/structurizr/cli/releases/download/${STRUCTURIZR_CLI_VERSION}/structurizr-cli.zip" \
+        --output /tmp/structurizr-cli.zip \
+    && unzip -o /tmp/structurizr-cli.zip -d /usr/local/bin/ \
+    && rm -f /tmp/structurizr-cli.zip
+
 
 # USER ${MAIN_USER}
 WORKDIR /
