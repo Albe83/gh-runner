@@ -37,6 +37,7 @@ RUN microdnf install --assumeyes --nodocs \
 RUN npm install -g \
         @mermaid-js/mermaid-cli@11.9.0 \
         @iconify-json/devicon@1.2.42 \
+        @openai/codex@0.23.0 \
     && npm cache clean --force && rm -rf /tmp/node-compile-cache
 
 ADD --chmod=0500 \
