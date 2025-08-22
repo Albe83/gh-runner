@@ -24,8 +24,10 @@ RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/var/run \
     --mount=type=cache,target=/var/log \
     --mount=type=cache,target=/var/cache \
-    set -Eeuo pipefail \
-    microdnf --refresh install --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
+    set -Eeuo pipefail; \
+    microdnf --refresh --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 module enable \
+        nodejs:22 \
+    && microdnf --refresh install --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
         jq \
         buildah fuse-overlayfs \
         gh \
@@ -39,8 +41,8 @@ RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/var/run \
     --mount=type=cache,target=/var/log \
     --mount=type=cache,target=/var/cache \
-    set -Eeuo pipefail \
-    npm install -g npm@latest && npm install -g \
+    set -Eeuo pipefail; \
+    npm install -g npm && npm install -g \
         @mermaid-js/mermaid-cli \
         @iconify-json/devicon \
         @openai/codex \
@@ -53,7 +55,7 @@ RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/var/run \
     --mount=type=cache,target=/var/log \
     --mount=type=cache,target=/var/cache \
-    set -Eeuo pipefail \
+    set -Eeuo pipefail; \
     /usr/local/bin/get-helm-3.sh --version v3.18.6 --no-sudo \
     && rm -f /usr/local/bin/get-helm-3.sh \
     && chmod 0755 /usr/local/bin/helm
@@ -63,7 +65,7 @@ RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/var/run \
     --mount=type=cache,target=/var/log \
     --mount=type=cache,target=/var/cache \
-    set -Eeuo pipefail \
+    set -Eeuo pipefail; \
     curl --fail --silent --show-error --location \
         "https://github.com/structurizr/cli/releases/download/${STRUCTURIZR_CLI_VERSION}/structurizr-cli.zip" \
         --output /tmp/structurizr-cli.zip \
@@ -76,7 +78,7 @@ RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/var/run \
     --mount=type=cache,target=/var/log \
     --mount=type=cache,target=/var/cache \
-    set -Eeuo pipefail \
+    set -Eeuo pipefail; \
     curl --fail --silent --show-error --location \
         ${COSIGN_URL} \
         --output /tmp/cosign \
@@ -88,7 +90,7 @@ RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/var/run \
     --mount=type=cache,target=/var/log \
     --mount=type=cache,target=/var/cache \
-    set -Eeuo pipefail \
+    set -Eeuo pipefail; \
     curl --fail --silent --show-error --location \
         "https://get.anchore.io/syft" | sh -s -- -b /usr/local/bin -v ${SYFT_VERSION}
 
@@ -98,7 +100,7 @@ RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/var/run \
     --mount=type=cache,target=/var/log \
     --mount=type=cache,target=/var/cache \
-    set -Eeuo pipefail \
+    set -Eeuo pipefail; \
     useradd \
     #--no-create-home \
     #--no-user-group \
@@ -118,7 +120,7 @@ ADD --chmod=0500 --chown=${MAIN_USER}:${MAIN_USER} files/gh-runner.sh ./gh-runne
 RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/var/run \
     --mount=type=cache,target=/var/log \
-    set -Eeuo pipefail \
+    set -Eeuo pipefail; \
     curl --fail --silent --show-error --location \
         "https://github.com/actions/runner/releases/download/v${GH_ACTION_RUNNER_VERSION}/actions-runner-linux-x64-${GH_ACTION_RUNNER_VERSION}.tar.gz" \
         --output ./actions-runner.tar.gz \
