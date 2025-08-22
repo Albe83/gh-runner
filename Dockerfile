@@ -41,8 +41,13 @@ RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/var/run \
     --mount=type=cache,target=/var/log \
     --mount=type=cache,target=/var/cache \
+    --mount=type=cache,target=/root/.cache \
+    --mount=type=cache,target=/root/.npm \
     set -Eeuo pipefail; \
-    npm install -g npm && npm install -g \
+    npm install --global npm && npm config --global delete python && npm install --global node \
+        && update-alternatives --install /usr/bin/node nodejs /usr/bin/node-22 22 \
+        && update-alternatives --install /usr/bin/node nodejs /usr/local/bin/node 24 \
+    && npm install --global \
         @mermaid-js/mermaid-cli \
         @iconify-json/devicon \
         @openai/codex \
