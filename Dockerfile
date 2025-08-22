@@ -128,7 +128,6 @@ ENV RUNNER_ALLOW_RUNASROOT=0
 ENV GITHUB_URL=""
 ENV GITHUB_TOKEN=""
 ENV GITHUB_LABELS=""
-ADD --chmod=0500 --chown=${MAIN_USER}:${MAIN_USER} files/gh-runner.sh ./gh-runner.sh
 RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/var/run \
     --mount=type=cache,target=/var/log \
@@ -137,3 +136,4 @@ RUN --mount=type=cache,target=/tmp \
         "https://github.com/actions/runner/releases/download/v${GH_ACTION_RUNNER_VERSION}/actions-runner-linux-x64-${GH_ACTION_RUNNER_VERSION}.tar.gz" \
         --output ./actions-runner.tar.gz \
     && tar -xzf ./actions-runner.tar.gz
+ADD --chmod=0500 --chown=${MAIN_USER}:${MAIN_USER} files/gh-runner.sh ./gh-runner.sh
