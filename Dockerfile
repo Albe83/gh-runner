@@ -29,6 +29,8 @@ RUN microdnf install --assumeyes --nodocs --setopt=install_weak_deps=0 \
         nodejs-npm \
         java-21-openjdk-headless \
         graphviz \
+        trivy \
+        terraform \
     && microdnf clean all && rm -rf /var/cache/yum && rm -rf /var/cache/dnf && rm -rf /tmp/*
 
 RUN npm install -g \
