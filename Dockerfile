@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/var/log \
     --mount=type=cache,target=/var/cache/dnf \
     set -eux; \
-    microdnf --refresh install \
+    microdnf --refresh install --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
         jq \
         buildah fuse-overlayfs \
         gh \
