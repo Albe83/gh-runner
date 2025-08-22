@@ -21,9 +21,10 @@ COPY --chown=root:root --chmod=0644 files${DNF_CONF_DIR}* ${DNF_CONF_DIR}
 ARG RPM_REPO_DIR="/etc/yum.repos.d/"
 COPY --chown=root:root --chmod=0644 files${RPM_REPO_DIR}* ${RPM_REPO_DIR}
 RUN --mount=type=cache,target=/tmp \
+    --mount=type=cache,target=/var/run \
     --mount=type=cache,target=/var/log \
-    --mount=type=cache,target=/var/cache/dnf \
-    set -eux; \
+    --mount=type=cache,target=/var/cache \
+    set -Eeuo pipefail \
     microdnf --refresh install --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
         jq \
         buildah fuse-overlayfs \
@@ -34,7 +35,12 @@ RUN --mount=type=cache,target=/tmp \
         libicu \
         trivy
 
-RUN npm install -g \
+RUN --mount=type=cache,target=/tmp \
+    --mount=type=cache,target=/var/run \
+    --mount=type=cache,target=/var/log \
+    --mount=type=cache,target=/var/cache \
+    set -Eeuo pipefail \
+    npm install -g npm@latest && npm install -g \
         @mermaid-js/mermaid-cli \
         @iconify-json/devicon \
         @openai/codex \
@@ -43,12 +49,22 @@ RUN npm install -g \
 ADD --chmod=0500 \
     "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3" \
     "/usr/local/bin/get-helm-3.sh"
-RUN /usr/local/bin/get-helm-3.sh --version v3.18.6 --no-sudo \
+RUN --mount=type=cache,target=/tmp \
+    --mount=type=cache,target=/var/run \
+    --mount=type=cache,target=/var/log \
+    --mount=type=cache,target=/var/cache \
+    set -Eeuo pipefail \
+    /usr/local/bin/get-helm-3.sh --version v3.18.6 --no-sudo \
     && rm -f /usr/local/bin/get-helm-3.sh \
     && chmod 0755 /usr/local/bin/helm
 
 ARG STRUCTURIZR_CLI_VERSION="v2025.05.28"
-RUN curl --fail --silent --show-error --location \
+RUN --mount=type=cache,target=/tmp \
+    --mount=type=cache,target=/var/run \
+    --mount=type=cache,target=/var/log \
+    --mount=type=cache,target=/var/cache \
+    set -Eeuo pipefail \
+    curl --fail --silent --show-error --location \
         "https://github.com/structurizr/cli/releases/download/${STRUCTURIZR_CLI_VERSION}/structurizr-cli.zip" \
         --output /tmp/structurizr-cli.zip \
     && unzip -o /tmp/structurizr-cli.zip -d /usr/local/bin/ \
@@ -56,19 +72,34 @@ RUN curl --fail --silent --show-error --location \
 
 ARG COSIGN_VERSION="2.5.3"
 ARG COSIGN_URL="https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${TARGETARCH}"
-RUN curl --fail --silent --show-error --location \
+RUN --mount=type=cache,target=/tmp \
+    --mount=type=cache,target=/var/run \
+    --mount=type=cache,target=/var/log \
+    --mount=type=cache,target=/var/cache \
+    set -Eeuo pipefail \
+    curl --fail --silent --show-error --location \
         ${COSIGN_URL} \
         --output /tmp/cosign \
     && install --mode=0755 --owner=root --group=root --preserve-timestamps --preserve-context /tmp/cosign /usr/local/bin/cosign \
     && rm -f /tmp/cosign && rm -rf /tmp/*
 
 ARG SYFT_VERSION="v1.31.0"
-RUN curl --fail --silent --show-error --location \
+RUN --mount=type=cache,target=/tmp \
+    --mount=type=cache,target=/var/run \
+    --mount=type=cache,target=/var/log \
+    --mount=type=cache,target=/var/cache \
+    set -Eeuo pipefail \
+    curl --fail --silent --show-error --location \
         "https://get.anchore.io/syft" | sh -s -- -b /usr/local/bin -v ${SYFT_VERSION}
 
 
 ARG MAIN_USER="gh-runner"
-RUN useradd \
+RUN --mount=type=cache,target=/tmp \
+    --mount=type=cache,target=/var/run \
+    --mount=type=cache,target=/var/log \
+    --mount=type=cache,target=/var/cache \
+    set -Eeuo pipefail \
+    useradd \
     #--no-create-home \
     #--no-user-group \
     --system \
@@ -84,7 +115,11 @@ ENV GITHUB_URL=""
 ENV GITHUB_TOKEN=""
 ENV GITHUB_LABELS=""
 ADD --chmod=0500 --chown=${MAIN_USER}:${MAIN_USER} files/gh-runner.sh ./gh-runner.sh
-RUN curl --fail --silent --show-error --location \
+RUN --mount=type=cache,target=/tmp \
+    --mount=type=cache,target=/var/run \
+    --mount=type=cache,target=/var/log \
+    set -Eeuo pipefail \
+    curl --fail --silent --show-error --location \
         "https://github.com/actions/runner/releases/download/v${GH_ACTION_RUNNER_VERSION}/actions-runner-linux-x64-${GH_ACTION_RUNNER_VERSION}.tar.gz" \
         --output ./actions-runner.tar.gz \
     && tar -xzf ./actions-runner.tar.gz
