@@ -16,9 +16,12 @@ FROM --platform=${TARGETPLATFORM} ${TARGET_IMAGE_REPOSITORY}/${TARGET_IMAGE_NAME
 ARG TARGETOS
 ARG TARGETARCH
 
+ARG DNF_CONF_DIR="/etc/dnf/"
+COPY --chown=root:root --chmod=0644 files${DNF_CONF_DIR}* ${DNF_CONF_DIR}
 ARG RPM_REPO_DIR="/etc/yum.repos.d/"
 COPY --chown=root:root --chmod=0644 files${RPM_REPO_DIR}* ${RPM_REPO_DIR}
-RUN microdnf install --assumeyes --nodocs --setopt=install_weak_deps=0 \
+RUN --mount=type=cache,target=/var/cache/dnf set -eux; \
+    microdnf --refresh install \
         libicu \
         unzip \
         ansible-core \
@@ -31,12 +34,12 @@ RUN microdnf install --assumeyes --nodocs --setopt=install_weak_deps=0 \
         graphviz \
         trivy \
         terraform \
-    && microdnf clean all && rm -rf /var/cache/yum && rm -rf /var/cache/dnf && rm -rf /tmp/*
+    && microdnf clean all && rm -rf /var/log/dnf* && rm -rf /var/cache/dnf && rm -rf /tmp/*
 
 RUN npm install -g \
-        @mermaid-js/mermaid-cli@11.9.0 \
-        @iconify-json/devicon@1.2.42 \
-        @openai/codex@0.23.0 \
+        @mermaid-js/mermaid-cli \
+        @iconify-json/devicon \
+        @openai/codex \
     && npm cache clean --force && rm -rf /tmp/node-compile-cache && rm -rf /tmp/*
 
 ADD --chmod=0500 \
