@@ -20,7 +20,10 @@ ARG DNF_CONF_DIR="/etc/dnf/"
 COPY --chown=root:root --chmod=0644 files${DNF_CONF_DIR}* ${DNF_CONF_DIR}
 ARG RPM_REPO_DIR="/etc/yum.repos.d/"
 COPY --chown=root:root --chmod=0644 files${RPM_REPO_DIR}* ${RPM_REPO_DIR}
-RUN --mount=type=cache,target=/var/cache/dnf set -eux; \
+RUN --mount=type=cache,target=/tmp \
+    --mount=type=cache,target=/var/log \
+    --mount=type=cache,target=/var/cache/dnf \
+    set -eux; \
     microdnf --refresh install \
         jq \
         buildah fuse-overlayfs \
@@ -29,9 +32,7 @@ RUN --mount=type=cache,target=/var/cache/dnf set -eux; \
         npm \
         unzip java-21-openjdk-headless graphviz \
         libicu \
-        trivy \
-    && microdnf clean all \
-    && rm -rf /var/log/dnf* /var/cache/dnf /tmp/*
+        trivy
 
 RUN npm install -g \
         @mermaid-js/mermaid-cli \
