@@ -7,5 +7,4 @@
     --url "${GITHUB_URL}" \
     --token "${GITHUB_TOKEN}" \
     --labels "${GITHUB_LABELS}" \
-&& export GITHUB_TOKEN="" \
-&& ./run.sh
+&& GITHUB_TOKEN="" ./run.sh
