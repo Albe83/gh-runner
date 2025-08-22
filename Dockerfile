@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 ARG TARGET_IMAGE_REPOSITORY="docker.io/library"
 ARG TARGET_IMAGE_NAME="oraclelinux"
-ARG TARGET_IMAGE_TAG="10-slim"
-ARG TARGET_IMAGE_DIGEST="sha256:8907e4c5317ce19cd361b0dc6be3a18680cd1800420db1d173316f6e6a109bac"
+ARG TARGET_IMAGE_TAG="9-slim"
+ARG TARGET_IMAGE_DIGEST="sha256:70350be019050cb2eb63d0f65c3053c90fdb78069a10a1ddef24981550201d30"
 ARG BUILD_IMAGE_REPOSITORY=${TARGET_IMAGE_REPOSITORY}
 ARG BUILD_IMAGE_NAME=${TARGET_IMAGE_NAME}
 ARG BUILD_IMAGE_TAG=${TARGET_IMAGE_TAG}
@@ -26,10 +26,11 @@ RUN microdnf install --assumeyes --nodocs --setopt=install_weak_deps=0 \
         buildah \
         fuse-overlayfs \
         gh \
-        nodejs-npm \
+        npm \
         java-21-openjdk-headless \
         graphviz \
         trivy \
+        terraform \
     && microdnf clean all && rm -rf /var/cache/yum && rm -rf /var/cache/dnf && rm -rf /tmp/*
 
 RUN npm install -g \
