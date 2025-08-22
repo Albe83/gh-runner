@@ -12,25 +12,23 @@ FROM --platform=${BUILDPLATFORM} ${BUILD_IMAGE_REPOSITORY}/${BUILD_IMAGE_NAME}:$
 ARG BUILDOS
 ARG BUILDARCH
 
-FROM ${TARGET_IMAGE_REPOSITORY}/${TARGET_IMAGE_NAME}:${TARGET_IMAGE_TAG}@${TARGET_IMAGE_DIGEST} AS target
+FROM --platform=${TARGETPLATFORM} ${TARGET_IMAGE_REPOSITORY}/${TARGET_IMAGE_NAME}:${TARGET_IMAGE_TAG}@${TARGET_IMAGE_DIGEST} AS target
 ARG TARGETOS
 ARG TARGETARCH
 
-ADD [ \
-        "https://cli.github.com/packages/rpm/gh-cli.repo", \
-        "/etc/yum.repos.d/" \
-    ]
-RUN microdnf install --assumeyes --nodocs \
-        libicu-74.2 \
-        unzip-6.0 \
-        ansible-core-2.16.14 \
-        jq-1.7.1 \
-        buildah-1.39.4 \
-        fuse-overlayfs-1.14 \
-        gh-2.76.2 \
-        nodejs-npm-10.9.2 \
-        java-21-openjdk-headless-21.0.8.0.9 \
-        graphviz-9.0.0 \
+ARG RPM_REPO_DIR="/etc/yum.repos.d/"
+COPY --chown=root:root --chmod=0644 files${RPM_REPO_DIR}* ${RPM_REPO_DIR}
+RUN microdnf install --assumeyes --nodocs --setopt=install_weak_deps=0 \
+        libicu \
+        unzip \
+        ansible-core \
+        jq \
+        buildah \
+        fuse-overlayfs \
+        gh \
+        nodejs-npm \
+        java-21-openjdk-headless \
+        graphviz \
     && microdnf clean all && rm -rf /var/cache/yum && rm -rf /var/cache/dnf && rm -rf /tmp/*
 
 RUN npm install -g \
