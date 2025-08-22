@@ -22,19 +22,16 @@ ARG RPM_REPO_DIR="/etc/yum.repos.d/"
 COPY --chown=root:root --chmod=0644 files${RPM_REPO_DIR}* ${RPM_REPO_DIR}
 RUN --mount=type=cache,target=/var/cache/dnf set -eux; \
     microdnf --refresh install \
-        libicu \
-        unzip \
-        ansible-core \
         jq \
-        buildah \
-        fuse-overlayfs \
+        buildah fuse-overlayfs \
         gh \
+        ansible-core terraform \
         npm \
-        java-21-openjdk-headless \
-        graphviz \
+        unzip java-21-openjdk-headless graphviz \
+        libicu \
         trivy \
-        terraform \
-    && microdnf clean all && rm -rf /var/log/dnf* && rm -rf /var/cache/dnf && rm -rf /tmp/*
+    && microdnf clean all \
+    && rm -rf /var/log/dnf* /var/cache/dnf /tmp/*
 
 RUN npm install -g \
         @mermaid-js/mermaid-cli \
