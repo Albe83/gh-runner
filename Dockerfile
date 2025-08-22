@@ -46,13 +46,6 @@ RUN /usr/local/bin/get-helm-3.sh --version v3.18.6 --no-sudo \
     && rm -f /usr/local/bin/get-helm-3.sh \
     && chmod 0755 /usr/local/bin/helm
 
-ARG TERRAFORM_VERSION="1.13.0"
-ADD "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip" \
-    "/tmp/terraform.zip"
-RUN unzip -o /tmp/terraform.zip -d /usr/local/bin/ \
-    && chmod 0755 /usr/local/bin/terraform \
-    && rm -f /tmp/terraform.zip && rm -rf /tmp/* 
-
 ARG STRUCTURIZR_CLI_VERSION="v2025.05.28"
 RUN curl --fail --silent --show-error --location \
         "https://github.com/structurizr/cli/releases/download/${STRUCTURIZR_CLI_VERSION}/structurizr-cli.zip" \
