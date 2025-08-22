@@ -25,9 +25,9 @@ RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/var/log \
     --mount=type=cache,target=/var/cache \
     set -Eeuo pipefail; \
-    microdnf --refresh --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 module enable \
+    microdnf module enable --refresh --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
         nodejs:22 \
-    && microdnf --refresh install --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
+    && microdnf install --refresh --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
         jq \
         buildah fuse-overlayfs \
         gh \
@@ -45,8 +45,8 @@ RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/root/.npm \
     set -Eeuo pipefail; \
     npm install --global npm && npm config --global delete python && npm install --global node \
-        && update-alternatives --install /usr/bin/node nodejs /usr/bin/node-22 22 \
-        && update-alternatives --install /usr/bin/node nodejs /usr/local/bin/node 24 \
+        && alternatives --install /usr/bin/node nodejs /usr/bin/node-22 22 \
+        && alternatives --install /usr/bin/node nodejs /usr/local/bin/node 24 \
     && npm install --global \
         @mermaid-js/mermaid-cli \
         @iconify-json/devicon \
@@ -99,6 +99,13 @@ RUN --mount=type=cache,target=/tmp \
     curl --fail --silent --show-error --location \
         "https://get.anchore.io/syft" | sh -s -- -b /usr/local/bin -v ${SYFT_VERSION}
 
+
+RUN --mount=type=cache,target=/tmp \
+    --mount=type=cache,target=/var/run \
+    --mount=type=cache,target=/var/log \
+    --mount=type=cache,target=/var/cache \
+    set -Eeuo pipefail; \
+    curl https://rclone.org/install.sh | bash
 
 ARG MAIN_USER="gh-runner"
 RUN --mount=type=cache,target=/tmp \
