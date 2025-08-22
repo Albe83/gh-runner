@@ -11,3 +11,9 @@ jobs:
       - name: say hello
         run: |
           echo hello, world!
+      - name: Current Directory
+        run: |
+          pwd
+      - name: Environements Variabiles
+        run: |
+          env
