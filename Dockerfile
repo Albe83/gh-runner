@@ -6,11 +6,12 @@ ARG TARGET_IMAGE_NAME="oraclelinux"
 ARG TARGET_IMAGE_TAG="9-slim"
 ARG TARGET_IMAGE_DIGEST="sha256:70350be019050cb2eb63d0f65c3053c90fdb78069a10a1ddef24981550201d30"
 
-FROM ${TARGET_IMAGE_REPOSITORY}/${TARGET_IMAGE_NAME}:${TARGET_IMAGE_TAG}@${TARGET_IMAGE_DIGEST} AS rpm-cache
+FROM ${TARGET_IMAGE_REPOSITORY}/${TARGET_IMAGE_NAME}:${TARGET_IMAGE_TAG}@${TARGET_IMAGE_DIGEST} AS base
 ARG TARGETOS
 ARG TARGETARCH
 ARG CONTAINER_NAME
 
+FROM base AS rpm-cache
 ARG DNF_CONF_DIR="/etc/dnf/"
 COPY --chown=root:root --chmod=0644 files${DNF_CONF_DIR}* ${DNF_CONF_DIR}
 ARG RPM_REPO_DIR="/etc/yum.repos.d/"
@@ -24,10 +25,6 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     && microdnf makecache
 
 FROM rpm-cache AS gh-runner
-ARG TARGETOS
-ARG TARGETARCH
-ARG CONTAINER_NAME
-
 ARG USER="gh-runner"
 ARG GH_ACTION_RUNNER_VERSION="2.328.0"
 RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
@@ -44,6 +41,8 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     && cd /home/${USER} && tar zxvf /tmp/actions-runner.tar.gz && chown -R ${USER}:${USER} /home/${USER} \
     && microdnf install gh
 COPY --chown=${USER}:${USER} --chmod=0550 files/home/${USER}/* /home/${USER}/
+
+FROM gh-runner AS final
 WORKDIR /home/${USER}
 USER ${USER}
 ENV GH_HOST="github.com"
