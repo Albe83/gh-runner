@@ -16,13 +16,13 @@ ARG DNF_CONF_DIR="/etc/dnf/"
 COPY --chown=root:root --chmod=0644 files${DNF_CONF_DIR}* ${DNF_CONF_DIR}
 ARG RPM_REPO_DIR="/etc/yum.repos.d/"
 COPY --chown=root:root --chmod=0644 files${RPM_REPO_DIR}* ${RPM_REPO_DIR}
+ARG DNF_CMD='dnf() { microdnf --setopt=install_weak_deps=0 --setopt=keepcache=1 --nodocs --assumeyes --nobest --refresh "$@"; }'
 RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
-    set -Eeuo pipefail \
-    && alias microdnf='microdnf --setopt=install_weak_deps=0,keepcache=1 --nodocs --assumeyes --nobest --refresh' \
-    && microdnf makecache
+    set -Eeuo pipefail && eval ${DNF_CMD} \
+    && dnf makecache
 
 FROM rpm-cache AS gh-runner
 ARG USER="gh-runner"
@@ -36,7 +36,7 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     && curl --fail --silent --show-error --location \
          "https://github.com/actions/runner/releases/download/v${GH_ACTION_RUNNER_VERSION}/actions-runner-${TARGETOS}-x64-${GH_ACTION_RUNNER_VERSION}.tar.gz" \
          --output /tmp/actions-runner.tar.gz \
-    && alias microdnf='microdnf --setopt=install_weak_deps=0,keepcache=1 --nodocs --assumeyes --nobest --refresh' \
+    && eval ${DNF_CMD} \
     && microdnf install gzip \
     && cd /home/${USER} && tar zxvf /tmp/actions-runner.tar.gz && chown -R ${USER}:${USER} /home/${USER} \
     && microdnf install gh
