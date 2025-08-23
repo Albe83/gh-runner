@@ -35,14 +35,25 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
     set -Eeuo pipefail \
-    && useradd --system --shell /bin/false --comment "GitHub Actions Runner" ${USER} \
+    && useradd --system --shell /bin/false --create-home --comment "GitHub Actions Runner" ${USER} \
     && curl --fail --silent --show-error --location \
          "https://github.com/actions/runner/releases/download/v${GH_ACTION_RUNNER_VERSION}/actions-runner-${TARGETOS}-x64-${GH_ACTION_RUNNER_VERSION}.tar.gz" \
-         --output /tmp/actions-runner.tar.gz
+         --output /tmp/actions-runner.tar.gz \
+    && alias microdnf='microdnf --setopt=install_weak_deps=0,keepcache=1 --nodocs --assumeyes --nobest --refresh' \
+    && microdnf install gzip \
+    && cd /home/${USER} && tar zxvf /tmp/actions-runner.tar.gz && chown -R ${USER}:${USER} /home/${USER} \
+    && microdnf install gh
 COPY --chown=${USER}:${USER} --chmod=0550 files/home/${USER}/* /home/${USER}/
-USER ${USER}
 WORKDIR /home/${USER}
-
+USER ${USER}
+ENV GH_HOST="github.com"
+ENV GH_OWNER=""
+ENV GH_REPO=""
+ENV GH_SCHEMA="https"
+ENV GH_URL="${GH_SCHEMA}://${GH_HOST}"
+ENV GH_URL_REPO="${GH_URL}/${GH_OWNER}/${GH_REPO}"
+ENV GH_TOKEN_FILE="/home/${USER}/.gh/token.txt"
+ENV GH_RUNNER_LABELS=""
 
 # FROM --platform=${TARGETPLATFORM} ${TARGET_IMAGE_REPOSITORY}/${TARGET_IMAGE_NAME}:${TARGET_IMAGE_TAG}@${TARGET_IMAGE_DIGEST} AS target
 # ARG TARGETOS
