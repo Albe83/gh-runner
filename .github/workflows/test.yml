@@ -1,0 +1,47 @@
+# .github/workflows/dummy.yml
+name: Dummy action
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-dummy-job:
+    runs-on: [self-hosted, Linux]
+    steps:
+      - name: say hello
+        run: |
+          echo hello, world!
+      - name: Current Directory
+        run: |
+          pwd
+      - name: Environements Variabiles
+        run: |
+          env
+      - name: List files
+        run: |
+          ls -lhart
+      - name: Git Utilies
+        run: |
+          gh --version
+          git --version
+      - name: Containers Utilities
+        run: |
+          buildah --version
+          cosign version
+          syft --version
+          trivy --version
+      - name: IaC Utilities
+        run: |
+          terraform version
+          ansible --version
+          helm version
+      - name: Architecture Tools
+        run: |
+          structurizr.sh version
+          mmdc --version
+      - name: AI Agents
+        run: |
+          codex --version
+      - name: Other Utilities
+        run: |
+          rclone --version
