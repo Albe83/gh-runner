@@ -1,11 +1,11 @@
-# .github/workflows/dummy.yml
-name: Dummy action
+# .github/workflows/test.yml
+name: Verify Self-Hosted Runner Setup
 
 on:
   workflow_dispatch:
 
 jobs:
-  test-dummy-job:
+  test-job:
     runs-on: [self-hosted, Linux]
     steps:
       - name: say hello
