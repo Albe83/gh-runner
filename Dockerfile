@@ -124,10 +124,6 @@ USER ${MAIN_USER}
 WORKDIR /home/${MAIN_USER}
 
 ARG GH_ACTION_RUNNER_VERSION="2.328.0"
-ENV RUNNER_ALLOW_RUNASROOT=0
-ENV GITHUB_URL=""
-ENV GITHUB_TOKEN=""
-ENV GITHUB_LABELS=""
 RUN --mount=type=cache,target=/tmp \
     --mount=type=cache,target=/var/run \
     --mount=type=cache,target=/var/log \
@@ -137,3 +133,12 @@ RUN --mount=type=cache,target=/tmp \
         --output ./actions-runner.tar.gz \
     && tar -xzf ./actions-runner.tar.gz
 ADD --chmod=0500 --chown=${MAIN_USER}:${MAIN_USER} files/gh-runner.sh ./gh-runner.sh
+ENV RUNNER_ALLOW_RUNASROOT=0
+ENV GH_HOST="github.com"
+ENV GH_SCHEMA="https"
+ENV GH_OWNER=""
+ENV GH_REPO=""
+ENV GH_URL="${GH_SCHEMA}://${GH_HOST}"
+ENV GH_URL_REPO="${GH_URL}/${GH_OWNER}/${GH_REPO}"
+ENV GH_TOKEN_FILE="/home/${MAIN_USER}/gh_token.txt"
+ENV GH_RUNNER_LABELS=""
