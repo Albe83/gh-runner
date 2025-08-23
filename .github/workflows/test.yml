@@ -8,15 +8,18 @@ jobs:
   test-job:
     runs-on: [self-hosted, Linux]
     steps:
-      - name: say hello
+      - name: System Release
         run: |
-          echo hello, world!
-      - name: Current Directory
+          cat /etc/system-release
+      - name: Current User
         run: |
-          pwd
+          whoami
       - name: Environements Variabiles
         run: |
           env
+      - name: Current Directory
+        run: |
+          pwd
       - name: List files
         run: |
           ls -lhart
@@ -45,3 +48,4 @@ jobs:
       - name: Other Utilities
         run: |
           rclone --version
+  
