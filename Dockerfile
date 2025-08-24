@@ -47,9 +47,15 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${CONTAINER_NAME}-npm-cache,type=cache,sharing=locked,target=/root/.npm \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf module enable nodejs:22 && dnf install npm \
-    && npm install --global node
+    && npm install --global --omit=dev --omit=optional --omit=peer node@24 \
+    && npm install --global --omit=dev --omit=optional --omit=peer npm \
+        && alternatives --install /usr/bin/npm npm /usr/local/bin/npm 1000 \
+        && npm config --global delete python \
+    && dnf remove npm nodejs nodejs-libs && dnf module disable nodejs:22 \
+    && npm install --global --omit=dev --omit=optional --omit=peer @openai/codex
 
 FROM ai-agent AS final
 WORKDIR /home/${USER}
