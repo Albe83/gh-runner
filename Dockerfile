@@ -48,7 +48,8 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
     set -Eeuo pipefail && eval ${DNF_CMD} \
-    && dnf module enable nodejs:22 && dnf install npm
+    && dnf module enable nodejs:22 && dnf install npm \
+    && npm install --global node
 
 FROM ai-agent AS final
 WORKDIR /home/${USER}
