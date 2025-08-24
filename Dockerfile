@@ -37,12 +37,20 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
          "https://github.com/actions/runner/releases/download/v${GH_ACTION_RUNNER_VERSION}/actions-runner-${TARGETOS}-x64-${GH_ACTION_RUNNER_VERSION}.tar.gz" \
          --output /tmp/actions-runner.tar.gz \
     && eval ${DNF_CMD} \
-    && microdnf install gzip \
+    && dnf install gzip \
     && cd /home/${USER} && tar zxvf /tmp/actions-runner.tar.gz && chown -R ${USER}:${USER} /home/${USER} \
-    && microdnf install gh
+    && dnf install gh
 COPY --chown=${USER}:${USER} --chmod=0550 files/home/${USER}/* /home/${USER}/
 
-FROM gh-runner AS final
+FROM gh-runner AS ai-agent
+RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    set -Eeuo pipefail && eval ${DNF_CMD} \
+    && dnf module enable nodejs:22 && dnf install npm
+
+FROM ai-agent AS final
 WORKDIR /home/${USER}
 USER ${USER}
 ENV GH_HOST="github.com"
