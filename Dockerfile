@@ -66,7 +66,17 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf install ansible-core terraform
 
-FROM iac-tools AS final
+FROM iac-tools AS container-tools
+RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    set -Eeuo pipefail && eval ${DNF_CMD} \
+    && dnf install \
+        buildah fuse-overlayfs \
+        trivy
+
+FROM container-tools AS final
 WORKDIR /home/${USER}
 USER ${USER}
 ENV GH_HOST="github.com"
