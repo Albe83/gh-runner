@@ -55,7 +55,8 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
         && alternatives --install /usr/bin/npm npm /usr/local/bin/npm 1000 \
         && npm config --global delete python \
     && dnf remove npm nodejs nodejs-libs && dnf module disable nodejs:22 \
-    && npm install --global --omit=dev --omit=optional --omit=peer @openai/codex
+    && npm install --global --omit=dev --omit=optional --omit=peer @openai/codex \
+        && alternatives --install /usr/bin/codex codex /usr/local/lib/node_modules/node/bin/codex 1000
 
 FROM ai-agent AS final
 WORKDIR /home/${USER}
