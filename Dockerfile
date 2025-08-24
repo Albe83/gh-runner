@@ -58,7 +58,15 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     && npm install --global --omit=dev --omit=optional --omit=peer @openai/codex \
         && alternatives --install /usr/bin/codex codex /usr/local/lib/node_modules/node/bin/codex 1000
 
-FROM ai-agent AS final
+FROM ai-agent AS iac-tools
+RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    set -Eeuo pipefail && eval ${DNF_CMD} \
+    && dnf install ansible-core terraform
+
+FROM iac-tools AS final
 WORKDIR /home/${USER}
 USER ${USER}
 ENV GH_HOST="github.com"
