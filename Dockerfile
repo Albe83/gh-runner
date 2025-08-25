@@ -23,7 +23,7 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf makecache
-
+    
 FROM rpm-cache AS gh-runner
 ARG USER="gh-runner"
 ARG GH_ACTION_RUNNER_VERSION="2.328.0"
@@ -42,7 +42,7 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     && dnf install gh
 COPY --chown=${USER}:${USER} --chmod=0550 files/home/${USER}/* /home/${USER}/
 
-FROM gh-runner AS ai-agent
+FROM gh-runner AS npm
 RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
@@ -54,7 +54,15 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     && npm install --global --omit=dev --omit=optional --omit=peer npm \
         && alternatives --install /usr/bin/npm npm /usr/local/bin/npm 1000 \
         && npm config --global delete python \
-    && dnf remove npm nodejs nodejs-libs && dnf module disable nodejs:22 \
+    && dnf remove npm nodejs nodejs-libs && dnf module disable nodejs:22
+
+FROM npm AS ai-agent
+RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${CONTAINER_NAME}-npm-cache,type=cache,sharing=locked,target=/root/.npm \
+    set -Eeuo pipefail && eval ${DNF_CMD} \
     && npm install --global --omit=dev --omit=optional --omit=peer @openai/codex \
         && alternatives --install /usr/bin/codex codex /usr/local/lib/node_modules/node/bin/codex 1000
 
@@ -76,7 +84,15 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
         buildah fuse-overlayfs \
         trivy
 
-FROM container-tools AS final
+FROM container-tools AS arch-tools
+RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    set -Eeuo pipefail && eval ${DNF_CMD} \
+    && npm install --global --omit=dev --omit=optional --omit=peer @mermaid-js/mermaid-cli @iconify-json/devicon
+
+FROM arch-tools AS final
 WORKDIR /home/${USER}
 USER ${USER}
 ENV GH_HOST="github.com"
