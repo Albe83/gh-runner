@@ -85,13 +85,13 @@ RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     && npm install --global --omit=dev --omit=optional --omit=peer @openai/codex \
         && alternatives --install /usr/bin/codex codex /usr/local/lib/node_modules/node/bin/codex 1000
 
-FROM ai-agent AS iac-tools
+FROM ai-agents AS iac-tools
 ARG HELM_VERSION="latest"
-RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
-    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
-    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
-    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
-    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
+RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,source=/root,from=system-config \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf install ansible-core terraform \
     && go install helm.sh/helm/v3/cmd/helm@${HELM_VERSION} \
@@ -99,11 +99,11 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
 
 FROM iac-tools AS container-tools
 ARG COSIGN_VERSION="latest"
-RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
-    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
-    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
-    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
-    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
+RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,source=/root,from=system-config \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf install \
         buildah fuse-overlayfs \
@@ -112,11 +112,11 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
         && alternatives --install /usr/bin/cosign cosign /usr/local/bin/cosign 1000
 
 FROM container-tools AS arch-tools
-RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
-    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
-    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
-    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
-    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
+RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,source=/root,from=system-config \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && npm install --global --omit=dev --omit=optional --omit=peer @mermaid-js/mermaid-cli @iconify-json/devicon
 
