@@ -96,6 +96,7 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
         && alternatives --install /usr/bin/helm helm /usr/local/bin/helm 1000
 
 FROM iac-tools AS container-tools
+ARG COSIGN_VERSION="latest"
 RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
@@ -105,7 +106,7 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     && dnf install \
         buildah fuse-overlayfs \
         trivy \
-    && go install github.com/sigstore/cosign/v2/cmd/cosign@latest \
+    && go install github.com/sigstore/cosign/v2/cmd/cosign@${COSIGN_VERSION} \
         && alternatives --install /usr/bin/cosign cosign /usr/local/bin/cosign 1000
 
 FROM container-tools AS arch-tools
