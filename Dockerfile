@@ -169,7 +169,7 @@ RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     && git clone https://github.com/adr/ad-guidance-tool && cd ad-guidance-tool \
     && go install && alternatives --install /usr/bin/adg adg /usr/local/bin/adg 1000
 
-COPY --from=download-structurizr --chown=root:root --chmod=0550 \
+COPY --from=download-structurizr --chown=root:root --chmod=0555 \
     /tmp/structurizr-cli/ \
     /usr/local/bin/
 
