@@ -21,6 +21,7 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf makecache
     
@@ -31,6 +32,7 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
     set -Eeuo pipefail \
     && useradd --system --shell /bin/false --create-home --comment "GitHub Actions Runner" ${USER} \
     && curl --fail --silent --show-error --location \
@@ -42,12 +44,23 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     && dnf install gh
 COPY --chown=${USER}:${USER} --chmod=0550 files/home/${USER}/* /home/${USER}/
 
-FROM gh-runner AS npm
+FROM gh-runner AS go
+ARG HELM_VERSION="latest"
 RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
-    --mount=id=${CONTAINER_NAME}-npm-cache,type=cache,sharing=locked,target=/root/.npm \
+    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
+    set -Eeuo pipefail && eval ${DNF_CMD} \
+    && dnf install go \
+    && go env -w GOBIN=/usr/local/bin
+
+FROM go AS npm
+RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf module enable nodejs:22 && dnf install npm \
     && npm install --global --omit=dev --omit=optional --omit=peer node@24 \
@@ -61,7 +74,7 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
-    --mount=id=${CONTAINER_NAME}-npm-cache,type=cache,sharing=locked,target=/root/.npm \
+    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && npm install --global --omit=dev --omit=optional --omit=peer @openai/codex \
         && alternatives --install /usr/bin/codex codex /usr/local/lib/node_modules/node/bin/codex 1000
@@ -74,8 +87,8 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
     --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
     set -Eeuo pipefail && eval ${DNF_CMD} \
-    && dnf install ansible-core terraform go \
-    && GOBIN=/usr/local/bin go install helm.sh/helm/v3/cmd/helm@${HELM_VERSION} \
+    && dnf install ansible-core terraform \
+    && go install helm.sh/helm/v3/cmd/helm@${HELM_VERSION} \
         && alternatives --install /usr/bin/helm helm /usr/local/bin/helm 1000
 
 FROM iac-tools AS container-tools
@@ -83,20 +96,18 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf install \
         buildah fuse-overlayfs \
         trivy
-    # && curl --fail --silent --show-error --location \
-    #     "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3" \
-    #     --output /tmp/get-helm-3.sh \
-    # && source /tmp/get-helm-3.sh
 
 FROM container-tools AS arch-tools
 RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && npm install --global --omit=dev --omit=optional --omit=peer @mermaid-js/mermaid-cli @iconify-json/devicon
 
