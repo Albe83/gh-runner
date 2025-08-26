@@ -25,7 +25,7 @@ RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     && dnf makecache
 
 ARG DNF_REQUIRED_MODULES="nodejs:22"
-ARG DNF_REQUIRED_PACKAGES="go npm gh"
+ARG DNF_REQUIRED_PACKAGES="go npm gh java-21-openjdk-headless"
 RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
@@ -148,9 +148,8 @@ RUN --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,so
     && curl --fail --silent --show-error --location \
         "https://github.com/structurizr/cli/releases/download/${STRUCTURIZR_CLI_VERSION}/structurizr-cli.zip" \
          --output /tmp/structurizr-cli.zip \
-    && mkdir -p /tmp/structurizr-cli && cd /tmp/actions-runner \
-    && eval ${DNF_CMD} && dnf install unzip \
-    && unzip /tmp/structurizr-cli.zip
+    && mkdir -p /tmp/structurizr-cli \
+    && eval ${DNF_CMD} && dnf install unzip && unzip -o /tmp/structurizr-cli.zip -d /tmp/structurizr-cli/
 
 FROM container-tools AS arch-tools
 RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
@@ -169,6 +168,10 @@ RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     set -Eeuo pipefail && eval ${DNF_CMD} && cd /root \
     && git clone https://github.com/adr/ad-guidance-tool && cd ad-guidance-tool \
     && go install && alternatives --install /usr/bin/adg adg /usr/local/bin/adg 1000
+
+COPY --from=download-structurizr --chown=root:root --chmod=0550 \
+    /tmp/structurizr-cli/ \
+    /usr/local/bin/
 
 FROM arch-tools AS other-tools
 ARG PKG_NAME="github.com/rclone/rclone"
@@ -194,40 +197,3 @@ ENV GH_URL="${GH_SCHEMA}://${GH_HOST}"
 ENV GH_URL_REPO="${GH_URL}/${GH_OWNER}/${GH_REPO}"
 ENV GH_TOKEN_FILE="/home/${USER}/.gh/token.txt"
 ENV GH_RUNNER_LABELS=""
-
-# FROM --platform=${TARGETPLATFORM} ${TARGET_IMAGE_REPOSITORY}/${TARGET_IMAGE_NAME}:${TARGET_IMAGE_TAG}@${TARGET_IMAGE_DIGEST} AS target
-# ARG TARGETOS
-# ARG TARGETARCH
-# RUN --mount=type=cache,target=/tmp \
-#     --mount=type=cache,target=/var/run \
-#     --mount=type=cache,target=/var/log \
-#     --mount=type=cache,target=/var/cache \
-#     set -Eeuo pipefail; \
-#     microdnf install --refresh --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
-#         dnf
-# ARG DNF_CONF_DIR="/etc/dnf/"
-# COPY --chown=root:root --chmod=0644 files${DNF_CONF_DIR}* ${DNF_CONF_DIR}
-# ARG RPM_REPO_DIR="/etc/yum.repos.d/"
-# COPY --chown=root:root --chmod=0644 files${RPM_REPO_DIR}* ${RPM_REPO_DIR}
-# RUN --mount=type=cache,target=/tmp \
-#     --mount=type=cache,target=/var/run \
-#     --mount=type=cache,target=/var/log \
-#     --mount=type=cache,target=/var/cache \
-#     set -Eeuo pipefail; \
-#     microdnf module enable --refresh --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
-#         nodejs:22 \
-#     && microdnf install --refresh --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
-#         unzip java-21-openjdk-headless graphviz 
-
-# ARG STRUCTURIZR_CLI_VERSION="v2025.05.28"
-# RUN --mount=type=cache,target=/tmp \
-#     --mount=type=cache,target=/var/run \
-#     --mount=type=cache,target=/var/log \
-#     --mount=type=cache,target=/var/cache \
-#     set -Eeuo pipefail; \
-#     curl --fail --silent --show-error --location \
-#         "https://github.com/structurizr/cli/releases/download/${STRUCTURIZR_CLI_VERSION}/structurizr-cli.zip" \
-#         --output /tmp/structurizr-cli.zip \
-#     && unzip -o /tmp/structurizr-cli.zip -d /usr/local/bin/ \
-#     && rm -f /tmp/structurizr-cli.zip && rm -rf /tmp/*
-
