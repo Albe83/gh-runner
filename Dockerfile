@@ -86,16 +86,25 @@ RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
         && alternatives --install /usr/bin/codex codex /usr/local/lib/node_modules/node/bin/codex 1000
 
 FROM ai-agents AS iac-tools
-ARG HELM_VERSION="latest"
 RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
     --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,source=/root,from=system-config \
     set -Eeuo pipefail && eval ${DNF_CMD} \
-    && dnf install ansible-core terraform \
-    && go install helm.sh/helm/v3/cmd/helm@${HELM_VERSION} \
-        && alternatives --install /usr/bin/helm helm /usr/local/bin/helm 1000
+    && dnf install ansible-core terraform
+
+ARG PKG_NAME="install helm.sh/helm/v3/cmd/helm"
+ARG PKG_VERSION="latest"
+ARG BIN_NAME="helm"
+RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,source=/root,from=system-config \
+    set -Eeuo pipefail && eval ${DNF_CMD} \
+    && go install ${PKG_NAME}@${PKG_VERSION} \
+        && alternatives --install /usr/bin/${BIN_NAME} ${BIN_NAME} /usr/local/bin/${BIN_NAME} 1000
 
 FROM iac-tools AS container-tools
 RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
