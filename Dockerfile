@@ -141,6 +141,15 @@ RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && npm install --global --omit=dev --omit=optional --omit=peer @mermaid-js/mermaid-cli @iconify-json/devicon
 
+RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,source=/root,from=system-config \
+    set -Eeuo pipefail && eval ${DNF_CMD} && cd /root \
+    && git clone https://github.com/adr/ad-guidance-tool && cd ad-guidance-tool \
+    && go install && alternatives --install /usr/bin/adg adg /usr/local/bin/adg 1000
+
 FROM arch-tools AS other-tools
 ARG PKG_NAME="github.com/rclone/rclone"
 ARG PKG_VERSION="latest"
