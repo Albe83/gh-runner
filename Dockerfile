@@ -71,8 +71,10 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/home/root \
     set -Eeuo pipefail && eval ${DNF_CMD} \
-    && dnf install ansible-core terraform
+    && dnf install ansible-core terraform go \
+    && GOBIN=/usr/local/bin go install helm.sh/helm/v3/cmd/helm@latest
 
 FROM iac-tools AS container-tools
 RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
@@ -83,6 +85,10 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     && dnf install \
         buildah fuse-overlayfs \
         trivy
+    # && curl --fail --silent --show-error --location \
+    #     "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3" \
+    #     --output /tmp/get-helm-3.sh \
+    # && source /tmp/get-helm-3.sh
 
 FROM container-tools AS arch-tools
 RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
@@ -126,30 +132,7 @@ ENV GH_RUNNER_LABELS=""
 #     microdnf module enable --refresh --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
 #         nodejs:22 \
 #     && microdnf install --refresh --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
-#         jq \
-#         buildah fuse-overlayfs \
-#         gh \
-#         ansible-core terraform \
-#         npm \
 #         unzip java-21-openjdk-headless graphviz \
-#         libicu \
-#         trivy
-
-# RUN --mount=type=cache,target=/tmp \
-#     --mount=type=cache,target=/var/run \
-#     --mount=type=cache,target=/var/log \
-#     --mount=type=cache,target=/var/cache \
-#     --mount=type=cache,target=/root/.cache \
-#     --mount=type=cache,target=/root/.npm \
-#     set -Eeuo pipefail; \
-#     npm install --global npm && npm config --global delete python && npm install --global node \
-#         && alternatives --install /usr/bin/node nodejs /usr/bin/node-22 22 \
-#         && alternatives --install /usr/bin/node nodejs /usr/local/bin/node 24 \
-#     && npm install --global \
-#         @mermaid-js/mermaid-cli \
-#         @iconify-json/devicon \
-#         @openai/codex \
-#     && npm cache clean --force && rm -rf /tmp/node-compile-cache && rm -rf /tmp/*
 
 # ADD --chmod=0500 \
 #     "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3" \
