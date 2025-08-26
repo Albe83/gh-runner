@@ -72,7 +72,7 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
-    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/home/root \
+    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf install ansible-core terraform go \
     && GOBIN=/usr/local/bin go install helm.sh/helm/v3/cmd/helm@${HELM_VERSION} \
