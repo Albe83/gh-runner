@@ -25,7 +25,7 @@ RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     && dnf makecache
 
 ARG DNF_REQUIRED_MODULES="nodejs:22"
-ARG DNF_REQUIRED_PACKAGES="go npm gh java-21-openjdk-headless"
+ARG DNF_REQUIRED_PACKAGES="go npm gh java-21-openjdk-headless libicu"
 RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
