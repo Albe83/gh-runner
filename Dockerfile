@@ -94,7 +94,7 @@ RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf install ansible-core terraform
 
-ARG PKG_NAME="install helm.sh/helm/v3/cmd/helm"
+ARG PKG_NAME="helm.sh/helm/v3/cmd/helm"
 ARG PKG_VERSION="latest"
 ARG BIN_NAME="helm"
 RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
@@ -220,10 +220,3 @@ ENV GH_RUNNER_LABELS=""
 #     && unzip -o /tmp/structurizr-cli.zip -d /usr/local/bin/ \
 #     && rm -f /tmp/structurizr-cli.zip && rm -rf /tmp/*
 
-
-# RUN --mount=type=cache,target=/tmp \
-#     --mount=type=cache,target=/var/run \
-#     --mount=type=cache,target=/var/log \
-#     --mount=type=cache,target=/var/cache \
-#     set -Eeuo pipefail; \
-#     curl https://rclone.org/install.sh | bash
