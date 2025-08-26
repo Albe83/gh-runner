@@ -1,84 +1,86 @@
 # syntax=docker/dockerfile:1
-ARG CONTAINER_NAME="gh-runner"
+ARG IMAGE_NAME="gh-runner"
 
-ARG TARGET_IMAGE_REPOSITORY="docker.io/library"
-ARG TARGET_IMAGE_NAME="oraclelinux"
-ARG TARGET_IMAGE_TAG="9-slim"
-ARG TARGET_IMAGE_DIGEST="sha256:70350be019050cb2eb63d0f65c3053c90fdb78069a10a1ddef24981550201d30"
+ARG BASE_IMAGE_REPOSITORY="docker.io/library"
+ARG BASE_IMAGE_NAME="oraclelinux"
+ARG BASE_IMAGE_TAG="9-slim"
+ARG BASE_IMAGE_DIGEST="sha256:70350be019050cb2eb63d0f65c3053c90fdb78069a10a1ddef24981550201d30"
 
-FROM ${TARGET_IMAGE_REPOSITORY}/${TARGET_IMAGE_NAME}:${TARGET_IMAGE_TAG}@${TARGET_IMAGE_DIGEST} AS base
+FROM ${BASE_IMAGE_REPOSITORY}/${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}@${BASE_IMAGE_DIGEST} AS base
 ARG TARGETOS
 ARG TARGETARCH
-ARG CONTAINER_NAME
+ARG IMAGE_NAME
 
-FROM base AS rpm-cache
+FROM base AS dnf
 ARG DNF_CONF_DIR="/etc/dnf/"
 COPY --chown=root:root --chmod=0644 files${DNF_CONF_DIR}* ${DNF_CONF_DIR}
 ARG RPM_REPO_DIR="/etc/yum.repos.d/"
 COPY --chown=root:root --chmod=0644 files${RPM_REPO_DIR}* ${RPM_REPO_DIR}
 ARG DNF_CMD='dnf() { microdnf --setopt=install_weak_deps=0 --setopt=keepcache=1 --nodocs --assumeyes --nobest --refresh "$@"; }'
-RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
-    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
-    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
-    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
-    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
+RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf makecache
-    
-FROM rpm-cache AS gh-runner
-ARG USER="gh-runner"
-ARG GH_ACTION_RUNNER_VERSION="2.328.0"
-RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
-    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
-    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
-    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
-    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
-    set -Eeuo pipefail \
-    && useradd --system --shell /bin/false --create-home --comment "GitHub Actions Runner" ${USER} \
-    && curl --fail --silent --show-error --location \
-         "https://github.com/actions/runner/releases/download/v${GH_ACTION_RUNNER_VERSION}/actions-runner-${TARGETOS}-x64-${GH_ACTION_RUNNER_VERSION}.tar.gz" \
-         --output /tmp/actions-runner.tar.gz \
-    && eval ${DNF_CMD} \
-    && dnf install gzip \
-    && cd /home/${USER} && tar zxvf /tmp/actions-runner.tar.gz && chown -R ${USER}:${USER} /home/${USER} \
-    && dnf install gh
-COPY --chown=${USER}:${USER} --chmod=0550 files/home/${USER}/* /home/${USER}/
 
-FROM gh-runner AS go
-ARG HELM_VERSION="latest"
-RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
-    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
-    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
-    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+ARG DNF_REQUIRED_MODULES="nodejs:22"
+ARG DNF_REQUIRED_PACKAGES="go npm gh"
+RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
     set -Eeuo pipefail && eval ${DNF_CMD} \
-    && dnf install go \
-    && go env -w GOBIN=/usr/local/bin
+    && dnf module enable ${DNF_REQUIRED_MODULES} \
+    && dnf install ${DNF_REQUIRED_PACKAGES} \
+    && dnf module disable ${DNF_REQUIRED_MODULES}
 
-FROM go AS npm
-RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
-    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
-    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
-    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+FROM dnf AS system-config
+RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${IMAGE_NAME}-home-root-cache,type=cache,sharing=locked,target=/root/.cache \
     set -Eeuo pipefail && eval ${DNF_CMD} \
-    && dnf module enable nodejs:22 && dnf install npm \
-        && npm config --global delete python
-RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
-    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
-    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
-    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
-    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
-    set -Eeuo pipefail && eval ${DNF_CMD} \
+    && go env -w GOBIN=/usr/local/bin GOCACHE=/var/cache/go-build \
+    && npm config --global delete python && npm config --global set cache /var/cache/npm \
     && npm install --global --omit=dev --omit=optional --omit=peer node@24 \
     && npm install --global --omit=dev --omit=optional --omit=peer npm \
         && alternatives --install /usr/bin/npm npm /usr/local/bin/npm 1000 \
-    && dnf remove npm nodejs nodejs-libs && dnf module disable nodejs:22
+    && dnf remove npm nodejs nodejs-libs
 
-FROM npm AS ai-agent
-RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
-    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
-    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
-    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
-    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
+FROM system-config AS download-actions-runner
+ARG GH_ACTION_RUNNER_VERSION="2.328.0"
+RUN --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,source=/root,from=system-config \
+    set -Eeuo pipefail \
+    && curl --fail --silent --show-error --location \
+         "https://github.com/actions/runner/releases/download/v${GH_ACTION_RUNNER_VERSION}/actions-runner-${TARGETOS}-x64-${GH_ACTION_RUNNER_VERSION}.tar.gz" \
+         --output /tmp/actions-runner.tar.gz \
+    && mkdir -p /tmp/actions-runner \
+    && eval ${DNF_CMD} \
+    && dnf install gzip \
+    && cd /tmp/actions-runner \
+    && tar zxvf /tmp/actions-runner.tar.gz
+
+FROM system-config AS gh-runner-user
+ARG USER="gh-runner"
+ARG GH_ACTION_RUNNER_VERSION="2.328.0"
+RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,source=/root,from=system-config \
+    set -Eeuo pipefail \
+    && useradd --system --shell /bin/false --create-home --comment "GitHub Actions Runner" ${USER}
+COPY --from=download-actions-runner --chown=${USER}:${USER} --chmod=0550 /tmp/actions-runner /home/${USER}
+COPY --chown=${USER}:${USER} --chmod=0550 files/home/${USER}/* /home/${USER}/
+
+FROM gh-runner-user AS ai-agents
+RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,source=/root,from=system-config \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && npm install --global --omit=dev --omit=optional --omit=peer @openai/codex \
         && alternatives --install /usr/bin/codex codex /usr/local/lib/node_modules/node/bin/codex 1000
