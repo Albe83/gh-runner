@@ -141,6 +141,17 @@ RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     && go install ${PKG_NAME}@${PKG_VERSION} \
         && alternatives --install /usr/bin/${BIN_NAME} ${BIN_NAME} /usr/local/bin/${BIN_NAME} 1000
 
+FROM system-config AS download-structurizr
+ARG STRUCTURIZR_CLI_VERSION="v2025.05.28"
+RUN --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,source=/root,from=system-config \
+    set -Eeuo pipefail \
+    && curl --fail --silent --show-error --location \
+        "https://github.com/structurizr/cli/releases/download/${STRUCTURIZR_CLI_VERSION}/structurizr-cli.zip" \
+         --output /tmp/structurizr-cli.zip \
+    && mkdir -p /tmp/structurizr-cli && cd /tmp/actions-runner \
+    && eval ${DNF_CMD} && dnf install unzip \
+    && unzip /tmp/structurizr-cli.zip
+
 FROM container-tools AS arch-tools
 RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
