@@ -50,7 +50,6 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
-    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf install go \
     && go env -w GOBIN=/usr/local/bin
@@ -60,13 +59,18 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
     --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
-    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf module enable nodejs:22 && dnf install npm \
+        && npm config --global delete python
+RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${CONTAINER_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${CONTAINER_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${CONTAINER_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${CONTAINER_NAME}-home-root,type=cache,sharing=locked,target=/root \
+    set -Eeuo pipefail && eval ${DNF_CMD} \
     && npm install --global --omit=dev --omit=optional --omit=peer node@24 \
     && npm install --global --omit=dev --omit=optional --omit=peer npm \
         && alternatives --install /usr/bin/npm npm /usr/local/bin/npm 1000 \
-        && npm config --global delete python \
     && dnf remove npm nodejs nodejs-libs && dnf module disable nodejs:22
 
 FROM npm AS ai-agent
@@ -100,7 +104,9 @@ RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf install \
         buildah fuse-overlayfs \
-        trivy
+        trivy \
+    && go install github.com/sigstore/cosign/v2/cmd/cosign@latest \
+        && alternatives --install /usr/bin/cosign cosign /usr/local/bin/cosign 1000
 
 FROM container-tools AS arch-tools
 RUN --mount=id=${CONTAINER_NAME}-tmp,type=tmpfs,target=/tmp \
@@ -145,19 +151,7 @@ ENV GH_RUNNER_LABELS=""
 #     microdnf module enable --refresh --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
 #         nodejs:22 \
 #     && microdnf install --refresh --assumeyes --nobest --nodocs --refresh --setopt=install_weak_deps=0 \
-#         unzip java-21-openjdk-headless graphviz \
-
-# ADD --chmod=0500 \
-#     "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3" \
-#     "/usr/local/bin/get-helm-3.sh"
-# RUN --mount=type=cache,target=/tmp \
-#     --mount=type=cache,target=/var/run \
-#     --mount=type=cache,target=/var/log \
-#     --mount=type=cache,target=/var/cache \
-#     set -Eeuo pipefail; \
-#     /usr/local/bin/get-helm-3.sh --version v3.18.6 --no-sudo \
-#     && rm -f /usr/local/bin/get-helm-3.sh \
-#     && chmod 0755 /usr/local/bin/helm
+#         unzip java-21-openjdk-headless graphviz 
 
 # ARG STRUCTURIZR_CLI_VERSION="v2025.05.28"
 # RUN --mount=type=cache,target=/tmp \
@@ -200,39 +194,3 @@ ENV GH_RUNNER_LABELS=""
 #     --mount=type=cache,target=/var/cache \
 #     set -Eeuo pipefail; \
 #     curl https://rclone.org/install.sh | bash
-
-# ARG MAIN_USER="gh-runner"
-# RUN --mount=type=cache,target=/tmp \
-#     --mount=type=cache,target=/var/run \
-#     --mount=type=cache,target=/var/log \
-#     --mount=type=cache,target=/var/cache \
-#     set -Eeuo pipefail; \
-#     useradd \
-#     #--no-create-home \
-#     #--no-user-group \
-#     --system \
-#     --shell /bin/false \
-#     --comment "Main User" \
-#     ${MAIN_USER}
-# USER ${MAIN_USER}
-# WORKDIR /home/${MAIN_USER}
-
-# ARG GH_ACTION_RUNNER_VERSION="2.328.0"
-# RUN --mount=type=cache,target=/tmp \
-#     --mount=type=cache,target=/var/run \
-#     --mount=type=cache,target=/var/log \
-#     set -Eeuo pipefail; \
-#     curl --fail --silent --show-error --location \
-#         "https://github.com/actions/runner/releases/download/v${GH_ACTION_RUNNER_VERSION}/actions-runner-linux-x64-${GH_ACTION_RUNNER_VERSION}.tar.gz" \
-#         --output ./actions-runner.tar.gz \
-#     && tar -xzf ./actions-runner.tar.gz
-# COPY --chown=${MAIN_USER}:${MAIN_USER} --chmod=0500 files/home/${MAIN_USER}/* /home/${MAIN_USER}/
-# ENV RUNNER_ALLOW_RUNASROOT=0
-# ENV GH_HOST="github.com"
-# ENV GH_SCHEMA="https"
-# ENV GH_OWNER=""
-# ENV GH_REPO=""
-# ENV GH_URL="${GH_SCHEMA}://${GH_HOST}"
-# ENV GH_URL_REPO="${GH_URL}/${GH_OWNER}/${GH_REPO}"
-# ENV GH_TOKEN_FILE="/home/${MAIN_USER}/gh_token.txt"
-# ENV GH_RUNNER_LABELS=""
