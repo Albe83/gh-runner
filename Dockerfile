@@ -98,7 +98,6 @@ RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
         && alternatives --install /usr/bin/helm helm /usr/local/bin/helm 1000
 
 FROM iac-tools AS container-tools
-ARG COSIGN_VERSION="latest"
 RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
     --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
@@ -107,9 +106,31 @@ RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && dnf install \
         buildah fuse-overlayfs \
-        trivy \
-    && go install github.com/sigstore/cosign/v2/cmd/cosign@${COSIGN_VERSION} \
-        && alternatives --install /usr/bin/cosign cosign /usr/local/bin/cosign 1000
+        trivy
+
+ARG PKG_NAME="github.com/sigstore/cosign/v2/cmd/cosign"
+ARG PKG_VERSION="latest"
+ARG BIN_NAME="cosign"
+RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,source=/root,from=system-config \
+    set -Eeuo pipefail && eval ${DNF_CMD} \
+    && go install ${PKG_NAME}@${PKG_VERSION} \
+        && alternatives --install /usr/bin/${BIN_NAME} ${BIN_NAME} /usr/local/bin/${BIN_NAME} 1000
+
+ARG PKG_NAME="github.com/anchore/syft/cmd/syft"
+ARG PKG_VERSION="latest"
+ARG BIN_NAME="syft"
+RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,source=/root,from=system-config \
+    set -Eeuo pipefail && eval ${DNF_CMD} \
+    && go install ${PKG_NAME}@${PKG_VERSION} \
+        && alternatives --install /usr/bin/${BIN_NAME} ${BIN_NAME} /usr/local/bin/${BIN_NAME} 1000
 
 FROM container-tools AS arch-tools
 RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
@@ -120,7 +141,20 @@ RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
     set -Eeuo pipefail && eval ${DNF_CMD} \
     && npm install --global --omit=dev --omit=optional --omit=peer @mermaid-js/mermaid-cli @iconify-json/devicon
 
-FROM arch-tools AS final
+FROM arch-tools AS other-tools
+ARG PKG_NAME="github.com/rclone/rclone"
+ARG PKG_VERSION="latest"
+ARG BIN_NAME="rclone"
+RUN --mount=id=${IMAGE_NAME}-tmp,type=tmpfs,target=/tmp \
+    --mount=id=${IMAGE_NAME}-run,type=tmpfs,target=/var/run \
+    --mount=id=${IMAGE_NAME}-log,type=cache,sharing=locked,target=/var/log \
+    --mount=id=${IMAGE_NAME}-cache,type=cache,sharing=locked,target=/var/cache \
+    --mount=id=${IMAGE_NAME}-home-root,type=cache,sharing=locked,target=/root,source=/root,from=system-config \
+    set -Eeuo pipefail && eval ${DNF_CMD} \
+    && go install ${PKG_NAME}@${PKG_VERSION} \
+        && alternatives --install /usr/bin/${BIN_NAME} ${BIN_NAME} /usr/local/bin/${BIN_NAME} 1000
+
+FROM other-tools AS final
 WORKDIR /home/${USER}
 USER ${USER}
 ENV GH_HOST="github.com"
@@ -167,28 +201,6 @@ ENV GH_RUNNER_LABELS=""
 #         --output /tmp/structurizr-cli.zip \
 #     && unzip -o /tmp/structurizr-cli.zip -d /usr/local/bin/ \
 #     && rm -f /tmp/structurizr-cli.zip && rm -rf /tmp/*
-
-# ARG COSIGN_VERSION="2.5.3"
-# ARG COSIGN_URL="https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${TARGETARCH}"
-# RUN --mount=type=cache,target=/tmp \
-#     --mount=type=cache,target=/var/run \
-#     --mount=type=cache,target=/var/log \
-#     --mount=type=cache,target=/var/cache \
-#     set -Eeuo pipefail; \
-#     curl --fail --silent --show-error --location \
-#         ${COSIGN_URL} \
-#         --output /tmp/cosign \
-#     && install --mode=0755 --owner=root --group=root --preserve-timestamps --preserve-context /tmp/cosign /usr/local/bin/cosign \
-#     && rm -f /tmp/cosign && rm -rf /tmp/*
-
-# ARG SYFT_VERSION="v1.31.0"
-# RUN --mount=type=cache,target=/tmp \
-#     --mount=type=cache,target=/var/run \
-#     --mount=type=cache,target=/var/log \
-#     --mount=type=cache,target=/var/cache \
-#     set -Eeuo pipefail; \
-#     curl --fail --silent --show-error --location \
-#         "https://get.anchore.io/syft" | sh -s -- -b /usr/local/bin -v ${SYFT_VERSION}
 
 
 # RUN --mount=type=cache,target=/tmp \
